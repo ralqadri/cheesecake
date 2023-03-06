@@ -1,28 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>cheesecake - a yt downloader</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles/index.css') }}">
+    <title>cheesecake</title>
+    <script src="{{url_for('static', filename='script.js')}}"></script>
 </head>
 <body>
-    <div class="banner">
-        <img src="{{ url_for('static', filename='images/shortcake.png') }}" alt="shortcake emoji">
-        <span class="title">cheesecake</span>
-        <span class="slogan">a silly youtube downloader</span>
-    </div>
-
-    <div class="content">
-        <form action="POST">
-            <input type="text" name="videolink">
-            <input type="submit" value="submit">
-        </form>
-    </div>
-
-    <div class="footer">
-
-    </div>
+    <form method="post" onsubmit="return validateForm()">
+        <label for="link">video link: </label> 
+        <input type="text" name="link" id="link">
+        <input type="submit" value="submit">
+    </form>
 </body>
 </html>

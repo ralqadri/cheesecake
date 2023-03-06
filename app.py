@@ -1,36 +1,45 @@
-from flask import Flask, request, render_template
+import os, time
+from flask import Flask, request, render_template, send_from_directory, after_this_request
+from pytube import YouTube
 
 app = Flask(__name__)
 
-@app.route('/page', methods=['GET', 'POST'])
-def index():
+@app.route('/download', methods=['GET', 'POST'])
+def download():
     if request.method == 'POST':
-        videolink = request.form.get('link')
-        return '''
-            <h1>link is {}</h1>
-        '''.format(videolink)
+        videolink = request.form['link']
+        videodirectory = './downloads'
+        videofiletitle = download_video(videolink)
+        videofilepath = os.path.join(videodirectory, videofiletitle)
+
+
+        @after_this_request
+        def remove_video(response):
+            time.sleep(1)
+            while True:
+                try:
+                    os.remove(videofilepath)
+                    break
+                except Exception as e:
+                    print(e)
+                    time.sleep(1)
+                    continue
+            return response
+
+        return send_from_directory(directory=videodirectory, path=videofiletitle, as_attachment=True)
     else:
         return render_template('index.html')
+    
+def download_video(videolink):
+    yt = YouTube(videolink)
+    yt = yt.streams.get_highest_resolution()
+    try:
+        yt.download('./downloads')
+    except:
+        print('error!')
+    print('downloaded video: ' + yt.title + ' - ' + videolink)
+    print('yt.get_file_path: ' + yt.get_file_path())
+    
+    videopath = str(yt.title) + '.mp4'
 
-
-# allow both GET and POST requests
-@app.route('/form-example', methods=['GET', 'POST'])
-def form_example():
-    # handle the POST request
-    if request.method == 'POST':
-        language = request.form.get('language')
-        framework = request.form.get('framework')
-        return '''
-                  <h1>The language value is: {}</h1>
-                  <h1>The framework value is: {}</h1>'''.format(language, framework)
-
-    # otherwise handle the GET request
-    return '''
-           <form method="POST">
-               <div><label>Language: <input type="text" name="language"></label></div>
-               <div><label>Framework: <input type="text" name="framework"></label></div>
-               <input type="submit" value="Submit">
-           </form>'''
-
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    return videopath
