@@ -1,5 +1,5 @@
 import os, time
-from flask import Flask, request, render_template, send_from_directory, after_this_request
+from flask import Flask, request, render_template, send_from_directory, current_app
 from pytube import YouTube
 
 app = Flask(__name__)
@@ -8,25 +8,19 @@ app = Flask(__name__)
 def download():
     if request.method == 'POST':
         videolink = request.form['link']
-        videodirectory = './downloads'
-        videofiletitle = download_video(videolink)
-        videofilepath = os.path.join(videodirectory, videofiletitle)
+        videodirectory = '.\downloads'
+        videofilename = download_video(videolink)
+        videofilepath = os.path.join(videodirectory, videofilename)
+        output_video_information(videolink, videodirectory, videofilename, videofilepath)
 
+        videofilehandle = open(videofilepath, 'rb')
+        def stream_and_remove_file():
+             yield from videofilehandle
+             videofilehandle.close()
+             os.remove(videofilepath)
 
-        @after_this_request
-        def remove_video(response):
-            time.sleep(1)
-            while True:
-                try:
-                    os.remove(videofilepath)
-                    break
-                except Exception as e:
-                    print(e)
-                    time.sleep(1)
-                    continue
-            return response
-
-        return send_from_directory(directory=videodirectory, path=videofiletitle, as_attachment=True)
+        return current_app.response_class(stream_and_remove_file(), headers={'Content-Disposition': 'attachment', 'filename': videofilename + '.mp4'})
+        # return send_from_directory(directory=videodirectory, path=videofiletitle, as_attachment=True)
     else:
         return render_template('index.html')
     
@@ -37,9 +31,19 @@ def download_video(videolink):
         yt.download('./downloads')
     except:
         print('error!')
-    print('downloaded video: ' + yt.title + ' - ' + videolink)
-    print('yt.get_file_path: ' + yt.get_file_path())
+    # print('downloaded video: ' + yt.title + ' - ' + videolink)
+    # print('yt.get_file_path: ' + yt.get_file_path())
     
     videopath = str(yt.title) + '.mp4'
 
     return videopath
+
+
+def output_video_information(videolink, videodirectory, videofilename, videofilepath):
+        print(' ' * 12)
+        print('-' * 64)
+        print('videolink: %s' % videolink)
+        print('videofiletitle: %s' % videofilename)
+        print('videofilepath: %s' % videofilepath)
+        print('-' * 64)
+        print(' ' * 12)
