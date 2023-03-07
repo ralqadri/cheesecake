@@ -12,20 +12,6 @@ def download():
         videofiletitle = download_video(videolink)
         videofilepath = os.path.join(videodirectory, videofiletitle)
 
-
-        @after_this_request
-        def remove_video(response):
-            time.sleep(1)
-            while True:
-                try:
-                    os.remove(videofilepath)
-                    break
-                except Exception as e:
-                    print(e)
-                    time.sleep(1)
-                    continue
-            return response
-
         return send_from_directory(directory=videodirectory, path=videofiletitle, as_attachment=True)
     else:
         return render_template('index.html')
