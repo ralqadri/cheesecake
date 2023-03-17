@@ -1,6 +1,5 @@
-import os, time, atexit
+import os, json, atexit, yt_dlp
 from flask import Flask, request, render_template, send_from_directory, after_this_request
-from pytube import YouTube
 from apscheduler.schedulers.background import BackgroundScheduler
 
 
@@ -19,27 +18,37 @@ def download():
         return render_template('index.html')
     
 def download_video(videolink):
-    yt = YouTube(videolink)
-    yt = yt.streams.get_highest_resolution()
-    try:
-        yt.download('./downloads')
-    except:
-        print('🚨 error! video is not available to download!')
+    yt_opts = {
+        'outtmpl': './downloads/%(title)s.%(ext)s',
+        'format': "mp4"
+    } 
 
-    print('')
-    print('📲 downloaded video: ' + yt.title + ' - ' + videolink)
-    print('🚓 yt.get_file_path: ' + yt.get_file_path())
-    print('')
-    
-    videopath = str(yt.title) + '.mp4'
+    info_file = './downloads/video.info.json'
 
-    return videopath
+    with yt_dlp.YoutubeDL(yt_opts) as ydl:
+        # error_code = ydl.download_with_info_file(info_file)
+        info = ydl.sanitize_info(ydl.extract_info(videolink, download=True))
 
-def print_every_5_mins():
-    print(time.strftime("%A, %d. %B %Y %I:%M:%S %p"))
+    # if error_code:
+    #     print('🚨 some videos failed to download!')
+    # else:
+    #     print('✅ all videos successfully downloaded!')
+
+    return info['title'] + '.' + info['ext']
+
+
+def clear_downloads():
+    directory = "./downloads"
+
+    print('📲 cron job clear_downloads() starting!')
+    for item in os.listdir(directory):
+        if item.endswith('.mp4'):
+            print('🚦 cron job: found file: ' + item + '; deleting...')
+            os.remove(os.path.join(directory, item))
+    print('📴 cron job clear_downloads() finished!')
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(print_every_5_mins, 'interval', minutes=5)
+scheduler.add_job(clear_downloads, 'interval', minutes=2)
 scheduler.start()
 
 # shut down the background scheduler when exiting the app
