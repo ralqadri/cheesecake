@@ -1,1 +1,4 @@
 # cheesecake
+
+## run
+```flask run```
