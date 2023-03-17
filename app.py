@@ -1,6 +1,7 @@
 import os, time, atexit
 from flask import Flask, request, render_template, send_from_directory, after_this_request
 from pytube import YouTube
+from pytube.cli import on_progress
 from apscheduler.schedulers.background import BackgroundScheduler
 
 
@@ -19,10 +20,11 @@ def download():
         return render_template('index.html')
     
 def download_video(videolink):
-    yt = YouTube(videolink)
+    yt = YouTube(videolink, on_progress_callback=on_progress)
     yt = yt.streams.get_highest_resolution()
     try:
         yt.download('./downloads')
+        print("(:")
     except:
         print('🚨 error! video is not available to download!')
 
@@ -35,11 +37,18 @@ def download_video(videolink):
 
     return videopath
 
-def print_every_5_mins():
-    print(time.strftime("%A, %d. %B %Y %I:%M:%S %p"))
+def clear_downloads():
+    directory = "./downloads"
+
+    print('📲 cron job clear_downloads() starting!')
+    for item in os.listdir(directory):
+        if item.endswith('.mp4'):
+            print('🚦 cron job: found file: ' + item + '; deleting...')
+            os.remove(os.path.join(directory, item))
+    print('📴 cron job clear_downloads() finished!')
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(print_every_5_mins, 'interval', minutes=5)
+scheduler.add_job(clear_downloads, 'interval', minutes=2)
 scheduler.start()
 
 # shut down the background scheduler when exiting the app
